@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ai là chuyên gia thông tin? — Trò chơi Tin học 9 (Bài 2)</title>
+  <style>
+    :root{--bg:#f4fbff;--card:#ffffff;--accent:#0b79d0;--accent-2:#12a37f;--muted:#6b7280}
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#eaf7fb);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .app{width:100%;max-width:980px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    .logo{width:72px;height:72px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px}
+    h1{margin:0;font-size:20px}
+    p.desc{margin:4px 0 0;color:var(--muted)}
+
+    .card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 8px 20px rgba(11,121,208,0.08);}
+    .controls{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+    .btn{background:var(--accent);color:#fff;padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600}
+    .btn.secondary{background:#eef6fb;color:var(--accent);border:1px solid rgba(11,121,208,0.12)}
+    .btn.ghost{background:transparent;color:var(--accent)}
+    .row{display:flex;gap:12px}
+
+    main{display:grid;grid-template-columns:1fr 320px;gap:16px;margin-top:12px}
+    @media (max-width:880px){main{grid-template-columns:1fr}}
+
+    .game-area{min-height:420px}
+    .question{font-size:18px;margin-bottom:12px}
+    .choices{display:flex;flex-direction:column;gap:10px}
+    .choice{background:#f8fbff;border:1px solid rgba(11,121,208,0.06);padding:12px;border-radius:10px;cursor:pointer}
+    .choice:hover{transform:translateY(-3px);transition:all .15s}
+    .choice.correct{background:#e6ffef;border-color:rgba(18,163,127,0.2)}
+    .choice.wrong{background:#fff1f0;border-color:rgba(220,38,38,0.12)}
+
+    .panel{background:linear-gradient(180deg,#fff, #fbfeff);padding:12px;border-radius:10px}
+    .score{font-size:14px;color:var(--muted)}
+    .big{font-size:28px;font-weight:700}
+
+    .explain{margin-top:10px;padding:10px;border-radius:8px;background:#fff;border:1px solid rgba(11,121,208,0.06)}
+
+    .list{display:flex;flex-direction:column;gap:8px}
+    .source{padding:8px;border-radius:8px;background:#fbfbff;border:1px solid #e8eef6}
+
+    footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* animation */
+    .pulse{animation:pulse .9s linear infinite}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
+
+    /* small helpers */
+    .muted{color:var(--muted);font-size:13px}
+    textarea{width:100%;min-height:70px;padding:10px;border-radius:8px;border:1px solid #e6eef6}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">TH9</div>
+      <div>
+        <h1>Ai là chuyên gia thông tin?</h1>
+        <p class="desc">Trò chơi tương tác ôn tập Bài 2 — Tổ chức lưu trữ, tìm kiếm và trao đổi thông tin (Tin học 9)</p>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="controls">
+        <select id="modeSelect" aria-label="Chọn chế độ">
+          <option value="quiz">Vòng 1: Trắc nghiệm</option>
+          <option value="tf">Vòng 2: Đúng / Sai</option>
+          <option value="scenario">Vòng 3: Thử thách</option>
+        </select>
+        <button class="btn" id="startBtn">Bắt đầu</button>
+        <button class="btn secondary" id="nextBtn" style="display:none">Câu tiếp</button>
+        <button class="btn ghost" id="resetBtn">Reset điểm</button>
+        <div style="margin-left:auto;text-align:right">
+          <div class="score muted">Điểm: <span id="score">0</span></div>
+          <div class="muted">Cao nhất: <span id="best">0</span></div>
+        </div>
+      </div>
+
+      <main>
+        <section class="game-area">
+          <div id="content" class="panel">
+            <p class="muted">Chọn chế độ rồi nhấn <strong>Bắt đầu</strong> để chơi. Trò chơi giúp HS ôn các tiêu chí chất lượng thông tin: <em>chính xác, đầy đủ, kịp thời, phù hợp, nguồn tin đáng tin cậy</em>.</p>
+          </div>
+        </section>
+
+        <aside style="display:flex;flex-direction:column;gap:12px">
+          <div class="panel">
+            <div class="muted">Tiêu chí đánh giá thông tin</div>
+            <ul class="list" style="margin-top:8px">
+              <li class="source">✅ <strong>Chính xác</strong> — có bằng chứng, nguồn đáng tin</li>
+              <li class="source">✅ <strong>Đầy đủ</strong> — cung cấp đủ dữ kiện quyết định</li>
+              <li class="source">✅ <strong>Kịp thời</strong> — thông tin không quá cũ</li>
+              <li class="source">✅ <strong>Phù hợp</strong> — liên quan đến mục tiêu tìm kiếm</li>
+              <li class="source">✅ <strong>Minh bạch nguồn</strong> — tác giả/đơn vị rõ ràng</li>
+            </ul>
+          </div>
+
+          <div class="panel">
+            <div class="muted">Hướng dẫn nhanh</div>
+            <ol style="margin-top:8px;padding-left:18px">
+              <li>Chọn chế độ (Vòng 1/2/3).</li>
+              <li>Trả lời từng câu, hệ thống chấm điểm ngay.</li>
+              <li>Xem phần giải thích để hiểu thêm.</li>
+            </ol>
+          </div>
+
+        </aside>
+      </main>
+
+      <footer>Phiên bản: 1.0 • Giáo viên có thể mở rộng câu hỏi trong mã JavaScript</footer>
+    </div>
+  </div>
+
+  <script>
+    // Data: câu hỏi mẫu (dễ dàng mở rộng)
+    const quizQuestions = [
+      {q: 'Trong giải quyết vấn đề, thông tin đóng vai trò nào?',
+       choices:['Chỉ để tham khảo','Quyết định đến hiệu quả giải quyết','Không quan trọng','Gây nhiễu'],
+       a:1,
+       explain:'Thông tin là yếu tố quyết định giúp phân tích, lựa chọn phương án phù hợp.'},
+      {q:'Tiêu chí nào KHÔNG phải tiêu chí đánh giá chất lượng thông tin?',
+       choices:['Chính xác','Đầy đủ','Cá nhân hóa','Kịp thời'],
+       a:2,
+       explain:'Cá nhân hóa không phải tiêu chí chất lượng thông tin trong bài; tiêu chí thường là chính xác, đầy đủ, kịp thời, phù hợp, nguồn tin.'},
+      {q:'Nguồn nào đáng tin cậy hơn để lấy số liệu dân số?',
+       choices:['Bài đăng không rõ tác giả trên mạng xã hội','Thông cáo báo chí của Tổng cục Thống kê','Bài blog cá nhân','Tin đồn từ chat'],
+       a:1,
+       explain:'Cơ quan nhà nước chuyên trách (Tổng cục Thống kê) là nguồn chính thức và đáng tin cậy.'},
+      {q:'Thông tin kịp thời có nghĩa là gì?',
+       choices:['Luôn có trước mọi vấn đề','Không lạc hậu, phù hợp với thời điểm cần sử dụng','Luôn dài và chi tiết','Chỉ xuất hiện trên truyền hình'],
+       a:1,
+       explain:'Kịp thời nghĩa là thông tin còn phù hợp với thời điểm quyết định, không bị lỗi thời.'}
+    ];
+
+    const tfStatements = [
+      {s:'Một bài viết trên một trang cá nhân không có nguồn tham khảo nhưng đọc rất thuyết phục nên luôn tin tưởng.', ok:false, explain:'Thiếu nguồn, thiếu bằng chứng => không đáng tin.'},
+      {s:'Số liệu do một tổ chức chuyên trách công bố thường có độ tin cậy cao hơn tin đồn.', ok:true, explain:'Nguồn chính thức thường có quy trình kiểm chứng.'},
+      {s:'Thông tin cũ nhưng vẫn đúng thì vẫn là thông tin có chất lượng cao.', ok:true, explain:'Nhiều thông tin mang tính ổn định (ví dụ: định nghĩa toán học) vẫn đúng dù cũ; điểm là còn phù hợp mục đích hay không.'}
+    ];
+
+    const scenarios = [
+      {
+        title:'Tổ chức tham quan lớp học',
+        desc:'Lớp muốn tổ chức tham quan. Hãy chọn nguồn tin phù hợp để xác định: chi phí, giờ mở cửa, và điều kiện an toàn.',
+        options:[
+          {text:'Trang Facebook cá nhân của người bán vé', score:0,reason:'Nguồn không chính thức, dễ sai'},
+          {text:'Website chính thức của điểm tham quan', score:30,reason:'Nguồn chính thức, cập nhật thông tin về giờ mở cửa và giá vé.'},
+          {text:'Bình luận trên một hội nhóm', score:5,reason:'Có thể hữu ích nhưng thiếu kiểm chứng'},
+          {text:'Video cũ trên YouTube 3 năm trước', score:3,reason:'Thông tin có thể lỗi thời'}
+        ]
+      },
+      {
+        title:'Thông báo khẩn về sức khỏe học sinh',
+        desc:'Trường gửi yêu cầu: tìm nguồn đáng tin để xác minh thông tin về một bệnh lây trong vùng.',
+        options:[
+          {text:'Trang web của Sở Y tế', score:40,reason:'Nguồn chuyên môn và chính thức'},
+          {text:'Bài đăng chia sẻ rộng rãi trên mạng xã hội', score:0,reason:'Dễ gây hoang mang, không có kiểm chứng'},
+          {text:'Bản tin truyền hình quay lại từ 10 năm trước', score:2,reason:'Có thể không còn phù hợp'},
+          {text:'Khảo sát nhanh ý kiến học sinh', score:5,reason:'Thông tin chủ quan, thiếu chuyên môn'}
+        ]
+      }
+    ];
+
+    // App state
+    let score = 0; let best = Number(localStorage.getItem('bestScore')||0);
+    let currentMode = null; let currentIndex = 0;
+
+    const content = document.getElementById('content');
+    const startBtn = document.getElementById('startBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const modeSelect = document.getElementById('modeSelect');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+
+    bestEl.textContent = best;
+    scoreEl.textContent = score;
+
+    startBtn.addEventListener('click', ()=>{
+      currentMode = modeSelect.value; currentIndex = 0; startMode(currentMode);
+    });
+    nextBtn.addEventListener('click', ()=>{
+      currentIndex++; startMode(currentMode);
+    });
+    resetBtn.addEventListener('click', ()=>{ if(confirm('Bạn có muốn reset điểm không?')){score=0;scoreEl.textContent=score;localStorage.removeItem('bestScore');best=0;bestEl.textContent=best;} });
+
+    function startMode(mode){
+      nextBtn.style.display='none';
+      if(mode==='quiz') renderQuiz();
+      else if(mode==='tf') renderTF();
+      else if(mode==='scenario') renderScenario();
+    }
+
+    // --- Quiz ---
+    function renderQuiz(){
+      if(currentIndex>=quizQuestions.length){
+        showEnd('Vòng Trắc nghiệm kết thúc!'); return;
+      }
+      const q = quizQuestions[currentIndex];
+      content.innerHTML = `
+        <div>
+          <div class="question">Câu ${currentIndex+1}: ${escapeHtml(q.q)}</div>
+          <div class="choices" id="choices"></div>
+          <div id="explain" class="explain" style="display:none"></div>
+        </div>
+      `;
+      const choicesWrap = document.getElementById('choices');
+      q.choices.forEach((ch,i)=>{
+        const btn = document.createElement('div'); btn.className='choice'; btn.tabIndex=0; btn.innerHTML = `<strong>${String.fromCharCode(65+i)}</strong>. ${escapeHtml(ch)}`;
+        btn.addEventListener('click', ()=>handleQuizAnswer(btn,i,q));
+        btn.addEventListener('keydown', e=>{ if(e.key==='Enter') handleQuizAnswer(btn,i,q); });
+        choicesWrap.appendChild(btn);
+      });
+    }
+    function handleQuizAnswer(btn,i,q){
+      const choices = document.querySelectorAll('.choice');
+      choices.forEach(c=>c.style.pointerEvents='none');
+      const explain = document.getElementById('explain'); explain.style.display='block'; explain.textContent = q.explain;
+      if(i===q.a){ btn.classList.add('correct'); addScore(15); }
+      else{ btn.classList.add('wrong'); // highlight correct
+        const correct = choices[q.a]; if(correct) correct.classList.add('correct');
+      }
+      nextBtn.style.display='inline-block';
+    }
+
+    // --- True / False ---
+    function renderTF(){
+      if(currentIndex>=tfStatements.length){ showEnd('Vòng Đúng / Sai kết thúc!'); return; }
+      const s = tfStatements[currentIndex];
+      content.innerHTML = `
+        <div>
+          <div class="question">Câu ${currentIndex+1}: ${escapeHtml(s.s)}</div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn" id="trueBtn">Đúng</button>
+            <button class="btn secondary" id="falseBtn">Sai</button>
+          </div>
+          <div style="margin-top:12px">
+            <div class="muted">Giải thích ngắn (viết 1-2 câu):</div>
+            <textarea id="reasonInput" placeholder="Viết lý do tại đây..."></textarea>
+            <div style="margin-top:8px;text-align:right"><button class="btn" id="submitTF">Nộp</button></div>
+          </div>
+          <div id="tfExplain" class="explain" style="display:none"></div>
+        </div>
+      `;
+      document.getElementById('submitTF').addEventListener('click', ()=>{
+        const chosen = document.querySelector('#trueBtn.selected') ? true : (document.querySelector('#falseBtn.selected')? false : null);
+        if(chosen===null){alert('Hãy chọn Đúng hoặc Sai trước khi nộp.');return;}
+        const inp = document.getElementById('reasonInput').value.trim();
+        evaluateTF(chosen, inp, s);
+      });
+
+      document.getElementById('trueBtn').addEventListener('click', e=>{toggleSelected(e.target);});
+      document.getElementById('falseBtn').addEventListener('click', e=>{toggleSelected(e.target);});
+    }
+    function toggleSelected(el){ document.querySelectorAll('#trueBtn,#falseBtn').forEach(b=>{b.classList.remove('selected');}); el.classList.add('selected'); }
+    function evaluateTF(chosen, explanation, s){
+      const tfExplain = document.getElementById('tfExplain'); tfExplain.style.display='block';
+      if(chosen===s.ok){ tfExplain.innerHTML = '<strong>Đúng!</strong> ' + s.explain; addScore(20); }
+      else { tfExplain.innerHTML = '<strong>Sai.</strong> ' + s.explain; }
+      // show teacher feedback hint
+      if(explanation.length>0) tfExplain.innerHTML += '<div style="margin-top:8px;color:#444"><em>Bạn ghi:</em> '+escapeHtml(explanation)+'</div>';
+      nextBtn.style.display='inline-block';
+    }
+
+    // --- Scenario ---
+    function renderScenario(){
+      if(currentIndex>=scenarios.length){ showEnd('Vòng Thử thách kết thúc!'); return; }
+      const sc = scenarios[currentIndex];
+      content.innerHTML = `
+        <div>
+          <div class="question">Thử thách ${currentIndex+1}: ${escapeHtml(sc.title)}</div>
+          <div class="muted" style="margin-bottom:10px">${escapeHtml(sc.desc)}</div>
+          <div class="list" id="optionsList"></div>
+          <div style="margin-top:12px">
+            <div class="muted">Lý do chọn (viết 1-3 câu):</div>
+            <textarea id="scReason" placeholder="Viết lý do... (bắt buộc)"></textarea>
+            <div style="margin-top:8px;text-align:right"><button class="btn" id="scSubmit">Chọn & Nộp</button></div>
+          </div>
+          <div id="scExplain" class="explain" style="display:none"></div>
+        </div>
+      `;
+      const list = document.getElementById('optionsList');
+      sc.options.forEach((op,idx)=>{
+        const el = document.createElement('div'); el.className='source'; el.innerHTML = `<label style='display:flex;gap:8px;align-items:center'><input type='radio' name='sc' value='${idx}' /> <div>${escapeHtml(op.text)}</div></label>`;
+        list.appendChild(el);
+      });
+      document.getElementById('scSubmit').addEventListener('click', ()=>{
+        const selected = document.querySelector('input[name=sc]:checked');
+        if(!selected){alert('Hãy chọn 1 nguồn.');return;}
+        const reason = document.getElementById('scReason').value.trim(); if(reason.length<5){alert('Hãy viết lý do đầy đủ (ít nhất 5 ký tự).');return;}
+        const idx = Number(selected.value); const op = sc.options[idx];
+        const scExplain = document.getElementById('scExplain'); scExplain.style.display='block';
+        scExplain.innerHTML = `<strong>Bạn chọn:</strong> ${escapeHtml(op.text)}<br/><strong>Điểm nhận được:</strong> ${op.score} điểm<br/><div style="margin-top:6px"><em>Lý do chuyên gia:</em> ${escapeHtml(op.reason)}</div><div style="margin-top:8px"><em>Bạn viết:</em> ${escapeHtml(reason)}</div>`;
+        addScore(op.score);
+        nextBtn.style.display='inline-block';
+      });
+    }
+
+    // --- Helpers ---
+    function addScore(v){ score+=v; scoreEl.textContent=score; if(score>best){ best=score; bestEl.textContent=best; localStorage.setItem('bestScore', best); } }
+    function showEnd(msg){ content.innerHTML = `<div><div class="big">${escapeHtml(msg)}</div><div style="margin-top:10px">Điểm hiện tại: <strong>${score}</strong></div><div style="margin-top:8px" class="muted">Nhấn Bắt đầu để chơi lại hoặc đổi chế độ.</div></div>`; nextBtn.style.display='none'; }
+
+    function escapeHtml(str){ return (str+'').replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m];}); }
+  </script>
+</body>
+</html>
